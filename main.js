@@ -57,47 +57,16 @@ function zencode64(x, y) {
 }
 
 
-function createIndex(lngs, lats, n) {
-  const mapped = [];
-
-  for (let i = 0; i < n; ++i) {
-    mapped.push({
-      i: i,
-      lng: lngs[i],
-      lat: lats[i],
-      z: zencode64(lngs[i], lats[i]),
-    });
-  }
-
-  mapped.sort((a, b) => {
-    if (a.z > b.z) return +1;
-    else if (a.z < b.z) return -1;
-    else return 0;
-  });
-
-  return {
-    length: mapped.length,
-    ids: mapped.map((v) => v.i),
-    lngs: mapped.map((v) => v.lng),
-    lats: mapped.map((v) => v.lat),
-    zvals: new BigUint64Array(mapped.map((v) => v.z)),
-  };
-}
-
-
 function _bsearchlt(a, f, l, v) {
-  f = BigInt(f);
-  l = BigInt(l);
+  let i = f, step = 0, n = l - f;
 
-  let i = f, step = 0n, n = l - f;
-
-  while (n > 0n) {
-    step = n / 2n;
+  while (n > 0) {
+    step = Math.floor(n / 2);
     i = f + step;
 
     if (a[i] < v) {  // lt
-      f = i + 1n;
-      n -= step + 1n;
+      f = i + 1;
+      n -= step + 1;
     } else {
       n = step;
     }
@@ -106,19 +75,17 @@ function _bsearchlt(a, f, l, v) {
   return f;
 }
 
+
 function _bsearchlte(a, f, l, v) {
-  f = BigInt(f);
-  l = BigInt(l);
+  let i = f, step = 0, n = l - f;
 
-  let i = f, step = 0n, n = l - f;
-
-  while (n > 0n) {
-    step = n / 2n;
+  while (n > 0) {
+    step = Math.floor(n / 2);
     i = f + step;
 
     if (a[i] <= v) {  // lte
-      f = i + 1n;
-      n -= step + 1n;
+      f = i + 1;
+      n -= step + 1;
     } else {
       n = step;
     }
@@ -168,29 +135,53 @@ function _bigmin(zval, zmin, zmax) {
 }
 
 
-function queryIndex(zbush, lngmin, latmin, lngmax, latmax) {
+function createIndex(xs, ys, n) {
+  const mapped = [];
+
+  for (let i = 0; i < n; ++i) {
+    mapped.push({
+      i: i,
+      x: xs[i],
+      y: ys[i],
+      z: zencode64(xs[i], ys[i]),
+    });
+  }
+
+  mapped.sort((a, b) => {
+    if (a.z > b.z) return +1;
+    else if (a.z < b.z) return -1;
+    else return 0;
+  });
+
+  return {
+    length: mapped.length,
+    ids: mapped.map((v) => v.i),
+    xs: mapped.map((v) => v.x),
+    ys: mapped.map((v) => v.y),
+    zs: new BigUint64Array(mapped.map((v) => v.z)),
+  };
+}
+
+
+function queryIndex(zbush, xmin, ymin, xmax, ymax) {
   const results = [];
 
-  const zmin = zencode64(lngmin, latmin);
-  const zmax = zencode64(lngmax, latmax);
+  const zmin = zencode64(xmin, ymin);
+  const zmax = zencode64(xmax, ymax);
 
-  let it = _bsearchlt(zbush.zvals, 0, zbush.length, zmin);
-  const last = _bsearchlte(zbush.zvals, it, zbush.length, zmax);
+  let it = _bsearchlt(zbush.zs, 0, zbush.length, zmin);
+  const last = _bsearchlte(zbush.zs, it, zbush.length, zmax);
 
   while (it != last) {
-    const lng = zbush.lngs[it];
-    const lat = zbush.lats[it];
+    const x = zbush.xs[it];
+    const y = zbush.ys[it];
 
-    if (lng >= lngmin && lng <= lngmax && lat >= latmin && lat <= latmax) {
-      const id = zbush.ids[it];
-
-      results.push(id);
-
-      it += 1n;
+    if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
+      results.push(zbush.ids[it]);
+      it += 1;
     } else {
-      const znext = _bigmin(zbush.zvals[it], zmin, zmax);
-
-      it = _bsearchlt(zbush.zvals, it, last, znext);
+      const znext = _bigmin(zbush.zs[it], zmin, zmax);
+      it = _bsearchlt(zbush.zs, it, last, znext);
     }
   }
 
@@ -198,11 +189,12 @@ function queryIndex(zbush, lngmin, latmin, lngmax, latmax) {
 }
 
 
-const zbush = createIndex(
-  /*lngs=*/ [0, 1, 2, 3, 4],
-  /*lats=*/ [0, 1, 2, 3, 4],
-  /*n=*/ 5);
+const n = 10;
+const xs = Array.from(Array(n).keys());
+const ys = Array.from(Array(n).keys());
+
+const zbush = createIndex(xs, ys, n);
+console.log(zbush.zs);
 
 const results = queryIndex(zbush, 2, 2, 3, 3);
-
 console.log(results);
