@@ -31,6 +31,14 @@ const foundIds = index.range(minX, minY, maxX, maxY)
 - https://github.com/mourner/flatbush
 
 
+## Release
+
+```bash
+npm set //registry.npmjs.org/:_authToken=$NPM_TOKEN
+npm publish
+```
+
+
 ## License
 
 Copyright © 2025 Daniel J. H.

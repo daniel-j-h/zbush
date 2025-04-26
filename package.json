@@ -1,0 +1,25 @@
+{
+  "name": "zbush",
+  "version": "0.0.1",
+  "description": "A very fast static spatial index for 2D points based on a Z-Order space filling curve and BIGMIN search space pruning",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daniel-j-h/zbush.git"
+  },
+  "keywords": [
+    "index",
+    "points",
+    "spatial",
+    "geometry"
+  ],
+  "author": "Daniel J. H.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/daniel-j-h/zbush/issues"
+  },
+  "homepage": "https://github.com/daniel-j-h/zbush#readme"
+}
