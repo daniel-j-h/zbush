@@ -19,24 +19,24 @@
 //   https://github.com/tinygraph/tinygraph/issues/71
 
 
-const _bitblast4 = [
+const bitblast4 = [
   0x00n, 0x01n, 0x04n, 0x05n, 0x10n, 0x11n, 0x14n, 0x15n,
   0x40n, 0x41n, 0x44n, 0x45n, 0x50n, 0x51n, 0x54n, 0x55n,
 ];
 
-function _bitblast8(x) {
-  return (_bitblast4[(x >> 0n) & 0xfn] << 0n)
-       | (_bitblast4[(x >> 4n) & 0xfn] << 8n);
+function bitblast8(x) {
+  return (bitblast4[(x >> 0n) & 0xfn] << 0n)
+       | (bitblast4[(x >> 4n) & 0xfn] << 8n);
 }
 
-function _bitblast16(x) {
-  return (_bitblast8((x >> 0n) & 0xffn) << 0n)
-       | (_bitblast8((x >> 8n) & 0xffn) << 16n);
+function bitblast16(x) {
+  return (bitblast8((x >> 0n) & 0xffn) << 0n)
+       | (bitblast8((x >> 8n) & 0xffn) << 16n);
 }
 
-function _bitblast32(x) {
-  return (_bitblast16((x >> 0n) & 0xffffn) << 0n)
-       | (_bitblast16((x >> 16n) & 0xffffn) << 32n);
+function bitblast32(x) {
+  return (bitblast16((x >> 0n) & 0xffffn) << 0n)
+       | (bitblast16((x >> 16n) & 0xffffn) << 32n);
 }
 
 
@@ -53,11 +53,11 @@ function zencode64(x, y) {
   x = BigInt.asUintN(32, BigInt(x));
   y = BigInt.asUintN(32, BigInt(y));
 
-  return (_bitblast32(y) << 1n) | _bitblast32(x);
+  return (bitblast32(y) << 1n) | bitblast32(x);
 }
 
 
-function _bsearchlt(a, f, l, v) {
+function bsearchlt(a, f, l, v) {
   let i = f, step = 0, n = l - f;
 
   while (n > 0) {
@@ -76,7 +76,7 @@ function _bsearchlt(a, f, l, v) {
 }
 
 
-function _bsearchlte(a, f, l, v) {
+function bsearchlte(a, f, l, v) {
   let i = f, step = 0, n = l - f;
 
   while (n > 0) {
@@ -95,7 +95,7 @@ function _bsearchlte(a, f, l, v) {
 }
 
 
-function _bigmin(zval, zmin, zmax) {
+function bigmin(zval, zmin, zmax) {
   let bigmin = zmin;
 
   let loadmask = 0x5555555555555555n;
@@ -135,66 +135,88 @@ function _bigmin(zval, zmin, zmax) {
 }
 
 
-function createIndex(xs, ys, n) {
-  const mapped = [];
+export default class ZBush {
+  constructor() {
+    this.ids = [];
+    this.xs = [];
+    this.ys = [];
 
-  for (let i = 0; i < n; ++i) {
-    mapped.push({
-      i: i,
-      x: xs[i],
-      y: ys[i],
-      z: zencode64(xs[i], ys[i]),
-    });
+    this.finished = false;
   }
 
-  mapped.sort((a, b) => {
-    if (a.z > b.z) return +1;
-    else if (a.z < b.z) return -1;
-    else return 0;
-  });
+  add(x, y) {
+    this.ids.push(this.ids.length);
 
-  return {
-    length: mapped.length,
-    ids: mapped.map((v) => v.i),
-    xs: mapped.map((v) => v.x),
-    ys: mapped.map((v) => v.y),
-    zs: new BigUint64Array(mapped.map((v) => v.z)),
-  };
-}
+    this.xs.push(x);
+    this.ys.push(y);
 
+    this.finished = false;
+  }
 
-function queryIndex(zbush, xmin, ymin, xmax, ymax) {
-  const results = [];
-
-  const zmin = zencode64(xmin, ymin);
-  const zmax = zencode64(xmax, ymax);
-
-  let it = _bsearchlt(zbush.zs, 0, zbush.length, zmin);
-  const last = _bsearchlte(zbush.zs, it, zbush.length, zmax);
-
-  while (it != last) {
-    const x = zbush.xs[it];
-    const y = zbush.ys[it];
-
-    if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
-      results.push(zbush.ids[it]);
-      it += 1;
-    } else {
-      const znext = _bigmin(zbush.zs[it], zmin, zmax);
-      it = _bsearchlt(zbush.zs, it, last, znext);
+  finish() {
+    if (this.finished) {
+      return;
     }
+
+    const mapped = [];
+
+    for (let i = 0; i < this.ids.length; ++i) {
+      mapped.push({i: i, z: zencode64(this.xs[i], this.ys[i]) });
+    }
+
+    mapped.sort((a, b) => {
+      if (a.z > b.z) return +1;
+      else if (a.z < b.z) return -1;
+      else return 0;
+    });
+
+    this.ids = mapped.map((v) => v.i);
+    this.xs = mapped.map((v) => this.xs[v.i]);
+    this.ys = mapped.map((v) => this.ys[v.i]);
+    this.zs = new BigUint64Array(mapped.map((v) => v.z));
   }
 
-  return results;
+  range(xmin, ymin, xmax, ymax) {
+    if (!this.finished) {
+      this.finish();
+    }
+
+    const zmin = zencode64(xmin, ymin);
+    const zmax = zencode64(xmax, ymax);
+
+    let it = bsearchlt(this.zs, 0, this.zs.length, zmin);
+    const last = bsearchlte(this.zs, it, this.zs.length, zmax);
+
+    const results = [];
+
+    while (it != last) {
+      const x = this.xs[it];
+      const y = this.ys[it];
+
+      if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
+        results.push(this.ids[it]);
+        it += 1;
+      } else {
+        const znext = bigmin(this.zs[it], zmin, zmax);
+        it = bsearchlt(this.zs, it, last, znext);
+      }
+    }
+
+    return results;
+  }
+
+}; // class ZBush
+
+
+if (0) {
+  const index = new ZBush();
+
+  for (let i = 0; i < 10; ++i) {
+    index.add(i, i);
+  }
+
+  index.finish();
+
+  const ids = index.range(2, 2, 3, 3);
+  console.log(ids);
 }
-
-
-const n = 10;
-const xs = Array.from(Array(n).keys());
-const ys = Array.from(Array(n).keys());
-
-const zbush = createIndex(xs, ys, n);
-console.log(zbush.zs);
-
-const results = queryIndex(zbush, 2, 2, 3, 3);
-console.log(results);

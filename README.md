@@ -13,7 +13,7 @@ tbd
 ## Usage
 
 ```ts
-const index = new ZBush(1000);
+const index = new ZBush();
 
 for (const {x, y} of items) {
   index.add(x, y)
