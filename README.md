@@ -7,7 +7,11 @@ A very fast static spatial index for 2D points based on a Z-Order space filling 
 
 ## Installation
 
-tbd
+```
+npm install zbush
+```
+
+https://www.npmjs.com/package/zbush
 
 
 ## Usage
@@ -16,7 +20,7 @@ tbd
 const index = new ZBush();
 
 for (const {x, y} of items) {
-  index.add(x, y)
+  index.add(x, y);
 }
 
 index.finish();

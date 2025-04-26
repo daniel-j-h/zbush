@@ -174,6 +174,8 @@ export default class ZBush {
     this.xs = mapped.map((v) => this.xs[v.i]);
     this.ys = mapped.map((v) => this.ys[v.i]);
     this.zs = new BigUint64Array(mapped.map((v) => v.z));
+
+    this.finished = true;
   }
 
   range(xmin, ymin, xmax, ymax) {
@@ -211,12 +213,14 @@ export default class ZBush {
 if (0) {
   const index = new ZBush();
 
-  for (let i = 0; i < 10; ++i) {
+  for (let i = 0; i < 10000000; ++i) {
     index.add(i, i);
   }
 
+  console.log("creating..");
   index.finish();
 
-  const ids = index.range(2, 2, 3, 3);
+  console.log("searching..");
+  const ids = index.range(1024, 1024, 1024 + 64, 1024 + 64);
   console.log(ids);
 }
