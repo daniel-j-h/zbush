@@ -134,10 +134,18 @@ test("indexing negative integral numbers not supported", () => {
   index.add(3, 3);
   index.add(4, 4);
 
+  assert.throws(index.finish, Error);
+});
+
+
+test("searching with negative integral numbers not supported", () => {
+  const index = new ZBush();
+
+  index.add(0, 0);
+
   index.finish();
 
-  const results = index.range(-2, -2, -3, -3);
-  assert.strictEqual(results.length, 0);
+  assert.throws(() => index.range(-1, -1, 1, 1), Error);
 });
 
 
@@ -146,17 +154,42 @@ test("indexing integral numbers bigger than 2^32-1 (u32) not supported", () => {
 
   // Z-order maps 2x UINT32_MAX (all bits set)
   // to 1x UINT64_MAX (all bits set), that's
-  // the max. we support with BigUint64Array
-  index.add(4294967295, 4294967295);
-  index.add(4294967295, 4294967295);
-  index.add(4294967295, 4294967295);
+  // the max. we support with BigUint64Array.
+  // The UINT32_MAX value is equal to 2**32-1.
+  index.add(2**32-1+1, 2**32-1+1);
+
+  assert.throws(index.finish);
+});
+
+
+test("searching with integral numbers bigger than 2^32-1 (u32) not supported", () => {
+  const index = new ZBush();
+
+  index.add(0, 0);
 
   index.finish();
 
-  console.log(index.zs);
+  assert.throws(() => index.range(0, 0, 2**32-1+1, 2**32-1+1), Error);
+});
 
-  const results = index.range(4294967295, 4294967295, 4294967295, 4294967295);
-  assert.strictEqual(results.length, 3);
+
+test("indexing floating point numbers not supported", () => {
+  const index = new ZBush();
+
+  index.add(2.3, 2.3);
+
+  assert.throws(index.finish);
+});
+
+
+test("searching with floating point numbers not supported", () => {
+  const index = new ZBush();
+
+  index.add(0, 0);
+
+  index.finish();
+
+  assert.throws(() => index.range(0, 0, 0.1, 0.1), Error);
 });
 
 

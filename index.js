@@ -77,7 +77,18 @@ export default class ZBush {
     const mapped = [];
 
     for (let i = 0; i < this.#xs.length; ++i) {
-      mapped.push({i: i, z: zencode64(this.#xs[i], this.#ys[i]) });
+      const x = this.#xs[i];
+      const y = this.#ys[i];
+
+      if (!fitsUintN(32, x)) {
+        throw new Error("can not index point that is not an integral type in [0, 2^32-1]");
+      }
+
+      if (!fitsUintN(32, y)) {
+        throw new Error("can not index point that is not an integral type in [0, 2^32-1]");
+      }
+
+      mapped.push({i: i, z: zencode64(x, y) });
     }
 
     mapped.sort((a, b) => {
@@ -113,6 +124,10 @@ export default class ZBush {
       this.finish();
     }
 
+    if (!fitsUintN(32, xmin) || !fitsUintN(32, ymin) || !fitsUintN(32, xmax) || !fitsUintN(32, ymax)) {
+      throw new Error("can not range query with values that are not of integral type in [0, 2^32-1]");
+    }
+
     const zmin = zencode64(xmin, ymin);
     const zmax = zencode64(xmax, ymax);
 
@@ -138,6 +153,18 @@ export default class ZBush {
   }
 
 }; // class ZBush
+
+
+// Checks that v can be represented as a unsigned BigInt with
+// bits number of bits. For example fitsUintN(32, v) checks if
+// v can be represented as a unsigned 32-bit integral type.
+function fitsUintN(bits, v) {
+  try {
+    return BigInt.asUintN(bits, BigInt(v)) === BigInt(v);
+  } catch (RangeError) {
+    return false;
+  }
+}
 
 
 // Maps two numbers on a one-dimensional Z-Order Curve.
