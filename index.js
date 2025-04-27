@@ -286,20 +286,3 @@ function bigmin(zval, zmin, zmax) {
 
   return bigmin;
 }
-
-
-
-if (0) {
-  const index = new ZBush();
-
-  for (let i = 0; i < 10000000; ++i) {
-    index.add(i, i);
-  }
-
-  console.log("creating..");
-  index.finish();
-
-  console.log("searching..");
-  const ids = index.range(1024, 1024, 1024 + 64, 1024 + 64);
-  console.log(ids);
-}

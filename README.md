@@ -36,7 +36,7 @@ We might relax this constraint in the future.
 ## How It Works
 
 The ideas implemented here originated as experiments in [tinygraph.org](https://tinygraph.org) but really go back to the 80s.
-If you are interested in a high-level overview on check out [my blog post](https://www.openstreetmap.org/user/daniel-j-h/diary/406584).
+If you are interested in a high-level overview check out [my blog post](https://www.openstreetmap.org/user/daniel-j-h/diary/406584).
 
 For experiments, context, implementation details, and ideas for further improvements
 - https://github.com/tinygraph/tinygraph/issues/22
