@@ -62,3 +62,28 @@ test("all outside query window", () => {
 
   assert.strictEqual(results.length, 0);
 });
+
+
+test("querying across a Z discontinuity", () => {
+  const index = new ZBush();
+
+  for (let i = 0; i < 4; ++i) {
+    for (let j = 0; j < 4; ++j) {
+      index.add(i, j);
+    }
+  }
+
+  const results = index.range(1, 1, 2, 2);
+  assert.strictEqual(results.length, 4);
+
+  // Note that the returned results are not sorted
+  // in any way, here we sort the ids and then check
+  // against the four items in the window from above
+
+  const sorted = results.sort((a, b) => a - b));
+
+  assert.strictEqual(results[0], 5);
+  assert.strictEqual(results[0], 6);
+  assert.strictEqual(results[0], 9);
+  assert.strictEqual(results[0], 10);
+});
