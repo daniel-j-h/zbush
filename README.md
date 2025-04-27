@@ -59,13 +59,10 @@ Similar projects for point indices using R-Tree or KD-Tree data structures
 
 Checklist
 - [ ] Bump version in `package.json`
-- [ ] Tag the release `git tag vx.y.z -a`, `git push origin vx.y.z`
-- [ ] Use NPM token and `npm publish` the [zbush package](https://www.npmjs.com/package/zbush)
+- [ ] Tag the release `git tag vx.y.z -a`
+- [ ] Push the tag `git push origin vx.y.z`
 
-```bash
-npm set //registry.npmjs.org/:_authToken=$NPM_TOKEN
-npm publish
-```
+There is a GitHub Action publishing to the [zbush package](https://www.npmjs.com/package/zbush) on NPM with provenance attestation.
 
 
 ## License
