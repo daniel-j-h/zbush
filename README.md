@@ -29,6 +29,9 @@ index.finish();
 const foundIds = index.range(minX, minY, maxX, maxY);
 ```
 
+Note: at the moment the x and y coordinates of points added must be non-negative and fit into 32-bit.
+We might relax this constraint in the future.
+
 
 ## How It Works
 

@@ -1,23 +1,160 @@
-// Spatial Index, on top of a Z-Order Curve using BIGMIN pruning
+// Spatial Index, built on top of a Z-Order Curve using BIGMIN pruning.
 //
-// Z-Order impl. translated from my work over at
+// The Z-Order implementation below is translated from my work over at
 // https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-zorder.c
 //
-// Z-Order Curve based Spatial Index translated from my work over at
+// The Z-Order Curve based Spatial Index is translated from my work over at
 // https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-index.c
 //
-// BIGMIN (also called nextJumpIn, GetNextZ-Address) impl. translated from my work over at
+// The BIGMIN (also called nextJumpIn, GetNextZ-Address) implementation is translated from my work over at
 // https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-index.c#L353-408
 //
-// Notes:
+//
+// Notes
 //
 // - Please read comments, explanations, and references in
 //     https://github.com/tinygraph/tinygraph/pull/68
+//     https://github.com/tinygraph/tinygraph/issues/22
 //     https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-index.c
+//     https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-zorder.c
 //
 // - For further improvements and ideas read
-//   https://github.com/tinygraph/tinygraph/issues/71
+//     https://github.com/tinygraph/tinygraph/issues/71
+//
+//
+// For the JavaScript implementation
+//
+// - The Z-Order Curve as well as BIGMIN work on type BigInt. That was a decision I made
+//   since primitive JavaScript numbers only support bit-wise operations as 32-bit ints.
+//   We need to see how fast these implementations are; in C/C++ we have the hardware
+//   instruction PDEP/PEXT that makes Z-Order encoding and decoding, respectively, fast.
+//
+// - At the moment we only support type u32 in the function add(x: u32, y: u32) since
+//   the z-value of two u32 will be u64 and we are storing them all in BigUint64Array.
+//   The question is if we want to keep it that way or somehow try and support the
+//   primitive JavaScript number data type.
 
+export default class ZBush {
+  constructor() {
+    this.xs = [];
+    this.ys = [];
+
+    this.finished = false;
+  }
+
+  // Adds a 2d point to the index. At the moment the x and y
+  // coordinates must be non-negative and fit into a 32-bit
+  // type as their 64-bit Z-value will be computed on them.
+  //
+  // Returns a non-negative increasing id per point added
+  // which will be returned for found items in the search.
+  //
+  // REQUIRES: x >= 0, y >= 0
+  // REQUIRES: x <= 2^32-1, y <= 2^32-1
+  add(x, y) {
+    this.xs.push(x);
+    this.ys.push(y);
+
+    this.finished = false;
+
+    return this.xs.length - 1;
+  }
+
+  // Indexes all points added. If indexing happened before
+  // already this function is a noop. Before searching this
+  // function must have been called.
+  finish() {
+    if (this.finished) {
+      return;
+    }
+
+    const mapped = [];
+
+    for (let i = 0; i < this.xs.length; ++i) {
+      mapped.push({i: i, z: zencode64(this.xs[i], this.ys[i]) });
+    }
+
+    mapped.sort((a, b) => {
+      if (a.z > b.z) return +1;
+      else if (a.z < b.z) return -1;
+      else return 0;
+    });
+
+    this.ids = mapped.map((v) => v.i);
+    this.xs = mapped.map((v) => this.xs[v.i]);
+    this.ys = mapped.map((v) => this.ys[v.i]);
+    this.zs = new BigUint64Array(mapped.map((v) => v.z));
+
+    this.finished = true;
+  }
+
+
+  // Searches for points in a range.
+  //
+  // Returns an array of non-negative increasing ids found
+  // in the range and indexed before.
+  //
+  // At the moment the four numbers delimiting the range
+  // must be non-negative and fit into a 32-bit type as
+  // a 64-bit Z-value will be computed on them.
+  //
+  // REQUIRES: xmin >= 0, xmin <= 2^32-1
+  // REQUIRES: ymin >= 0, ymin <= 2^32-1
+  // REQUIRES: xmax >= 0, xmax <= 2^32-1
+  // REQUIRES: ymax >= 0, ymax <= 2^32-1
+  range(xmin, ymin, xmax, ymax) {
+    if (!this.finished) {
+      this.finish();
+    }
+
+    const zmin = zencode64(xmin, ymin);
+    const zmax = zencode64(xmax, ymax);
+
+    let it = bsearchlt(this.zs, 0, this.zs.length, zmin);
+    const last = bsearchlte(this.zs, it, this.zs.length, zmax);
+
+    const results = [];
+
+    while (it != last) {
+      const x = this.xs[it];
+      const y = this.ys[it];
+
+      if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
+        results.push(this.ids[it]);
+        it += 1;
+      } else {
+        const znext = bigmin(this.zs[it], zmin, zmax);
+        it = bsearchlt(this.zs, it, last, znext);
+      }
+    }
+
+    return results;
+  }
+
+}; // class ZBush
+
+
+// Maps two numbers on a one-dimensional Z-Order Curve.
+//
+// Returns the Z value as a 64-bit unsigned BigInt.
+//
+// The two numbers must be non-negative and fit into a
+// 32-bit type as the return type is unsigned 64-bit.
+//
+// The reason for this is that efficient and compact
+// storage can then happen in form of BigUint64Array.
+//
+// The Z-Order implementation below is translated from my work over at
+// https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-zorder.c
+//
+// REQUIRES: x >= 0, y >= 0
+// REQUIRES: x <= 2^32-1, y <= 2^32-1
+function zencode64(x, y) {
+  x = BigInt.asUintN(32, BigInt(x));
+  y = BigInt.asUintN(32, BigInt(y));
+
+  return (bitblast32(y) << 1n) | bitblast32(x);
+}
 
 const bitblast4 = [
   0x00n, 0x01n, 0x04n, 0x05n, 0x10n, 0x11n, 0x14n, 0x15n,
@@ -40,23 +177,15 @@ function bitblast32(x) {
 }
 
 
-// Maps two numbers on a one-dimensional Z-Order Curve.
-// The two numbers must be non-negative and fit into a
-// 32-bit type as the return type is unsigned 64-bit.
+// Simple binary search in an array a, in its
+// sub-range [f, l] for value v comparing "<"
 //
-// The reason for this is that efficient and compact
-// storage can then happen in form of BigUint64Array.
+// The binary search implementation below is translated from my work over at
+// https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-index.c#L299-L351
 //
-// REQUIRES: x >= 0, y >= 0
-// REQUIRES: x <= 2^32-1, y <= 2^32-1
-function zencode64(x, y) {
-  x = BigInt.asUintN(32, BigInt(x));
-  y = BigInt.asUintN(32, BigInt(y));
-
-  return (bitblast32(y) << 1n) | bitblast32(x);
-}
-
-
+// REQUIRES: f >= 0
+// REQUIRES: f <= l
+// REQUIRES: l <= a.length
 function bsearchlt(a, f, l, v) {
   let i = f, step = 0, n = l - f;
 
@@ -75,7 +204,15 @@ function bsearchlt(a, f, l, v) {
   return f;
 }
 
-
+// Simple binary search in an array a, in its
+// sub-range [f, l] for value v comparing "<="
+//
+// The binary search implementation below is translated from my work over at
+// https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-index.c#L299-L351
+//
+// REQUIRES: f >= 0
+// REQUIRES: f <= l
+// REQUIRES: l <= a.length
 function bsearchlte(a, f, l, v) {
   let i = f, step = 0, n = l - f;
 
@@ -95,6 +232,22 @@ function bsearchlte(a, f, l, v) {
 }
 
 
+// The BIGMIN, nextJumpIn, GetNextZ-Address optimization:
+//
+// With a value on the Z-Order Curve zval and a range of
+// [zmin, zmax] this function returns the next value after
+// zval that is again within the bounding box.
+//
+// Multidimensional Range Search in Dynamically Balanced Trees, H. Tropf, H. Herzog
+// https://www.vision-tools.com/h-tropf/multidimensionalrangequery.pdf
+// https://hermanntropf.de/media/multidimensionalrangequery.pdf
+//
+// The BIGMIN implementation below is translated from my work over at
+// https://github.com/tinygraph/tinygraph/blob/5f7af38f99c3aeec64f136fe4284dbf36e3c625d/tinygraph/tinygraph-index.c#L353-408
+//
+// REQUIRES: zval >= zmin
+// REQUIRES: zval < zmax
+// REQUIRES: zmin <= zmax
 function bigmin(zval, zmin, zmax) {
   let bigmin = zmin;
 
@@ -134,79 +287,6 @@ function bigmin(zval, zmin, zmax) {
   return bigmin;
 }
 
-
-export default class ZBush {
-  constructor() {
-    this.xs = [];
-    this.ys = [];
-
-    this.finished = false;
-  }
-
-  add(x, y) {
-    this.xs.push(x);
-    this.ys.push(y);
-
-    this.finished = false;
-
-    return this.xs.length - 1;
-  }
-
-  finish() {
-    if (this.finished) {
-      return;
-    }
-
-    const mapped = [];
-
-    for (let i = 0; i < this.xs.length; ++i) {
-      mapped.push({i: i, z: zencode64(this.xs[i], this.ys[i]) });
-    }
-
-    mapped.sort((a, b) => {
-      if (a.z > b.z) return +1;
-      else if (a.z < b.z) return -1;
-      else return 0;
-    });
-
-    this.ids = mapped.map((v) => v.i);
-    this.xs = mapped.map((v) => this.xs[v.i]);
-    this.ys = mapped.map((v) => this.ys[v.i]);
-    this.zs = new BigUint64Array(mapped.map((v) => v.z));
-
-    this.finished = true;
-  }
-
-  range(xmin, ymin, xmax, ymax) {
-    if (!this.finished) {
-      this.finish();
-    }
-
-    const zmin = zencode64(xmin, ymin);
-    const zmax = zencode64(xmax, ymax);
-
-    let it = bsearchlt(this.zs, 0, this.zs.length, zmin);
-    const last = bsearchlte(this.zs, it, this.zs.length, zmax);
-
-    const results = [];
-
-    while (it != last) {
-      const x = this.xs[it];
-      const y = this.ys[it];
-
-      if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
-        results.push(this.ids[it]);
-        it += 1;
-      } else {
-        const znext = bigmin(this.zs[it], zmin, zmax);
-        it = bsearchlt(this.zs, it, last, znext);
-      }
-    }
-
-    return results;
-  }
-
-}; // class ZBush
 
 
 if (0) {
