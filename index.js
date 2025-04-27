@@ -151,6 +151,8 @@ export default class ZBush {
     this.ys.push(y);
 
     this.finished = false;
+
+    return this.xs.length - 1;
   }
 
   finish() {
