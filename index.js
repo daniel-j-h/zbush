@@ -137,7 +137,6 @@ function bigmin(zval, zmin, zmax) {
 
 export default class ZBush {
   constructor() {
-    this.ids = [];
     this.xs = [];
     this.ys = [];
 
@@ -145,8 +144,6 @@ export default class ZBush {
   }
 
   add(x, y) {
-    this.ids.push(this.ids.length);
-
     this.xs.push(x);
     this.ys.push(y);
 
@@ -162,7 +159,7 @@ export default class ZBush {
 
     const mapped = [];
 
-    for (let i = 0; i < this.ids.length; ++i) {
+    for (let i = 0; i < this.xs.length; ++i) {
       mapped.push({i: i, z: zencode64(this.xs[i], this.ys[i]) });
     }
 
