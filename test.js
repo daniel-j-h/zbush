@@ -80,10 +80,96 @@ test("querying across a Z discontinuity", () => {
   // in any way, here we sort the ids and then check
   // against the four items in the window from above
 
-  const sorted = results.sort((a, b) => a - b));
+  const sorted = results.sort((a, b) => a - b);
 
   assert.strictEqual(results[0], 5);
-  assert.strictEqual(results[0], 6);
-  assert.strictEqual(results[0], 9);
-  assert.strictEqual(results[0], 10);
+  assert.strictEqual(results[1], 6);
+  assert.strictEqual(results[2], 9);
+  assert.strictEqual(results[3], 10);
+});
+
+
+test("querying without explicit finish()", () => {
+  const index = new ZBush();
+
+  index.add(0, 0);
+  index.add(1, 1);
+  index.add(2, 2);
+  index.add(3, 3);
+
+  const results = index.range(2, 2, 3, 3);
+  assert.strictEqual(results.length, 2);
+});
+
+
+test("querying after re-indexing without finish()", () => {
+  const index = new ZBush();
+
+  index.add(0, 0);
+  index.add(1, 1);
+  index.add(2, 2);
+  index.add(3, 3);
+
+  const results1 = index.range(2, 2, 3, 3);
+  assert.strictEqual(results1.length, 2);
+
+  index.add(2, 2);
+  index.add(3, 3);
+
+  const results2 = index.range(2, 2, 3, 3);
+  assert.strictEqual(results2.length, 4);
+});
+
+
+test("indexing negative integral numbers not supported", () => {
+  const index = new ZBush();
+
+  index.add(-1, -1);
+  index.add(-2, -2);
+  index.add(-3, -3);
+  index.add(-4, -4);
+
+  index.add(1, 1);
+  index.add(2, 2);
+  index.add(3, 3);
+  index.add(4, 4);
+
+  index.finish();
+
+  const results = index.range(-2, -2, -3, -3);
+  assert.strictEqual(results.length, 0);
+});
+
+
+test("indexing integral numbers bigger than 2^32-1 (u32) not supported", () => {
+  const index = new ZBush();
+
+  // Z-order maps 2x UINT32_MAX (all bits set)
+  // to 1x UINT64_MAX (all bits set), that's
+  // the max. we support with BigUint64Array
+  index.add(4294967295, 4294967295);
+  index.add(4294967295, 4294967295);
+  index.add(4294967295, 4294967295);
+
+  index.finish();
+
+  console.log(index.zs);
+
+  const results = index.range(4294967295, 4294967295, 4294967295, 4294967295);
+  assert.strictEqual(results.length, 3);
+});
+
+
+test("index internals are hidden in the exported class", () => {
+  const index = new ZBush();
+
+  index.add(0, 0);
+
+  index.finish();
+
+  assert.strictEqual(index.ids, undefined);
+  assert.strictEqual(index.xs, undefined);
+  assert.strictEqual(index.ys, undefined);
+  assert.strictEqual(index.zs, undefined);
+  assert.strictEqual(index.finished, undefined);
 });

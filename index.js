@@ -35,11 +35,17 @@
 //   primitive JavaScript number data type.
 
 export default class ZBush {
-  constructor() {
-    this.xs = [];
-    this.ys = [];
+  #ids;
+  #xs;
+  #ys;
+  #zs;
+  #finished;
 
-    this.finished = false;
+  constructor() {
+    this.#xs = [];
+    this.#ys = [];
+
+    this.#finished = false;
   }
 
   // Adds a 2d point to the index. At the moment the x and y
@@ -52,26 +58,26 @@ export default class ZBush {
   // REQUIRES: x >= 0, y >= 0
   // REQUIRES: x <= 2^32-1, y <= 2^32-1
   add(x, y) {
-    this.xs.push(x);
-    this.ys.push(y);
+    this.#xs.push(x);
+    this.#ys.push(y);
 
-    this.finished = false;
+    this.#finished = false;
 
-    return this.xs.length - 1;
+    return this.#xs.length - 1;
   }
 
   // Indexes all points added. If indexing happened before
   // already this function is a noop. Before searching this
   // function must have been called.
   finish() {
-    if (this.finished) {
+    if (this.#finished) {
       return;
     }
 
     const mapped = [];
 
-    for (let i = 0; i < this.xs.length; ++i) {
-      mapped.push({i: i, z: zencode64(this.xs[i], this.ys[i]) });
+    for (let i = 0; i < this.#xs.length; ++i) {
+      mapped.push({i: i, z: zencode64(this.#xs[i], this.#ys[i]) });
     }
 
     mapped.sort((a, b) => {
@@ -80,12 +86,12 @@ export default class ZBush {
       else return 0;
     });
 
-    this.ids = mapped.map((v) => v.i);
-    this.xs = mapped.map((v) => this.xs[v.i]);
-    this.ys = mapped.map((v) => this.ys[v.i]);
-    this.zs = new BigUint64Array(mapped.map((v) => v.z));
+    this.#ids = mapped.map((v) => v.i);
+    this.#xs = mapped.map((v) => this.#xs[v.i]);
+    this.#ys = mapped.map((v) => this.#ys[v.i]);
+    this.#zs = new BigUint64Array(mapped.map((v) => v.z));
 
-    this.finished = true;
+    this.#finished = true;
   }
 
 
@@ -103,28 +109,28 @@ export default class ZBush {
   // REQUIRES: xmax >= 0, xmax <= 2^32-1
   // REQUIRES: ymax >= 0, ymax <= 2^32-1
   range(xmin, ymin, xmax, ymax) {
-    if (!this.finished) {
+    if (!this.#finished) {
       this.finish();
     }
 
     const zmin = zencode64(xmin, ymin);
     const zmax = zencode64(xmax, ymax);
 
-    let it = bsearchlt(this.zs, 0, this.zs.length, zmin);
-    const last = bsearchlte(this.zs, it, this.zs.length, zmax);
+    let it = bsearchlt(this.#zs, 0, this.#zs.length, zmin);
+    const last = bsearchlte(this.#zs, it, this.#zs.length, zmax);
 
     const results = [];
 
     while (it != last) {
-      const x = this.xs[it];
-      const y = this.ys[it];
+      const x = this.#xs[it];
+      const y = this.#ys[it];
 
       if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
-        results.push(this.ids[it]);
+        results.push(this.#ids[it]);
         it += 1;
       } else {
-        const znext = bigmin(this.zs[it], zmin, zmax);
-        it = bsearchlt(this.zs, it, last, znext);
+        const znext = bigmin(this.#zs[it], zmin, zmax);
+        it = bsearchlt(this.#zs, it, last, znext);
       }
     }
 
