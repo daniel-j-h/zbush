@@ -1,0 +1,22 @@
+{
+  "name": "bench",
+  "private": true,
+  "version": "0.0.1",
+  "description": "benchmarking zbush against similar projects",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Daniel J. H.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/daniel-j-h/zbush/issues"
+  },
+  "homepage": "https://github.com/daniel-j-h/zbush#readme",
+  "dependencies": {
+    "flatbush": "^4.4.0",
+    "kdbush": "^4.0.2",
+    "rbush": "^4.0.1",
+    "zbush": "^0.0.8"
+  }
+}

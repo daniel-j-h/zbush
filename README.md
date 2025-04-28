@@ -2,9 +2,6 @@
 
 A very fast spatial index for 2D points based on a Z-Order space filling curve and BIGMIN search space pruning.
 
-Note: The core ideas implemented here are very flexible and allow e.g. to index more dimensions than two, indexing more shapes and not just points, have a fast WebAssembly version, and more.
-If you come across limitations or have use-cases not covered here, please do open an issue and let us know.
-
 
 ## Installation
 
@@ -45,6 +42,9 @@ For experiments, context, implementation details, and ideas for further improvem
 - https://github.com/tinygraph/tinygraph/issues/70
 - https://github.com/tinygraph/tinygraph/blob/main/tinygraph/tinygraph-zorder.c
 - https://github.com/tinygraph/tinygraph/blob/main/tinygraph/tinygraph-index.c
+
+Note: The core ideas implemented here are very flexible and allow e.g. to index more dimensions than two, indexing more shapes and not just points, have a fast WebAssembly version, and more.
+If you come across limitations or have use-cases not covered here, please do open an issue and let us know.
 
 
 ## Similar
