@@ -195,18 +195,15 @@ const bitblast4 = [
 ];
 
 function bitblast8(x) {
-  return (bitblast4[(x >> 0n) & 0xfn] << 0n)
-       | (bitblast4[(x >> 4n) & 0xfn] << 8n);
+  return bitblast4[x & 0xfn] | (bitblast4[(x >> 4n) & 0xfn] << 8n);
 }
 
 function bitblast16(x) {
-  return (bitblast8((x >> 0n) & 0xffn) << 0n)
-       | (bitblast8((x >> 8n) & 0xffn) << 16n);
+  return bitblast8(x & 0xffn) | (bitblast8((x >> 8n) & 0xffn) << 16n);
 }
 
 function bitblast32(x) {
-  return (bitblast16((x >> 0n) & 0xffffn) << 0n)
-       | (bitblast16((x >> 16n) & 0xffffn) << 32n);
+  return bitblast16(x & 0xffffn) | (bitblast16((x >> 16n) & 0xffffn) << 32n);
 }
 
 
