@@ -1,16 +1,16 @@
 // Benchmarking our simple implementation below against the C/C++ version in tinygraph.
 //
 // Index construction 10M points
-// - C/C++: <1s
-// - Js: ~4s
+// - zbush-C/C++: <1s
+// - zbush-Js: ~40s
+// - kdbush: ~4s
 //
 // Range query 1M bounding boxes
-// - C/C++: ~7s
-// - Js: ~50s
+// - zbush-C/C++: ~4s
+// - zbush-Js: ~17s
+// - kdbush: ~3s
 //
-// That's roughly 4x slower index construction and 7x slower querying.
-//
-// Profile trace below, showing how the bit arithmetic on BigInt is very
+// Profile trace for querying: the bit arithmetic on BigInt is very
 // expensive compared to C/C++ where bit arithmetic is pretty much for
 // free compared to memory access latency and we have access to hardware
 // instructions PDEP/PEXT for Z-Order bit interleaving.
@@ -28,15 +28,16 @@
 
 //import RBush from "rbush";
 //import Flatbush from "flatbush";
-import KDBush from "kdbush";
-import ZBush from "zbush";
+//import KDBush from "kdbush";
+//import ZBush from "zbush";
+import ZBush from "../index.js";
 
 function randomInt(lo, hi) { return Math.floor(Math.random() * (Math.floor(hi) - Math.ceil(lo)) + Math.ceil(lo)); }
 function randomUint32() { return randomInt(0, 2**32); }
 
 
 function make1() {
-  const n = 1000000;
+  const n = 10000000;
 
   const index = new ZBush();
 
@@ -72,7 +73,7 @@ function bench1() {
 
 
 function make2() {
-  const n = 1000000;
+  const n = 10000000;
 
   const index = new KDBush(n);
 
@@ -107,5 +108,5 @@ function bench2() {
 }
 
 
-//bench1();
+bench1();
 //bench2();

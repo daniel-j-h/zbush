@@ -4,7 +4,7 @@ import assert from "node:assert";
 import ZBush from "./index.js";
 
 
-test("empty index", (t) => {
+test("empty index", () => {
   const index = new ZBush();
 
   index.finish();
@@ -15,7 +15,7 @@ test("empty index", (t) => {
 });
 
 
-test("singular point", (t) => {
+test("singular point", () => {
   const index = new ZBush();
 
   const id = index.add(0, 0);

@@ -134,18 +134,41 @@ export default class ZBush {
     let it = bsearchlt(this.#zs, 0, this.#zs.length, zmin);
     const last = bsearchlte(this.#zs, it, this.#zs.length, zmax);
 
+    let outside = 0;
     const results = [];
 
-    while (it != last) {
+    while (it !== last) {
       const x = this.#xs[it];
       const y = this.#ys[it];
 
       if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
+        // If we're inside the query bounding box, we are
+        // scanning results we can return to the user.
+
         results.push(this.#ids[it]);
         it += 1;
+        outside = 0;
       } else {
-        const znext = bigmin(this.#zs[it], zmin, zmax);
-        it = bsearchlt(this.#zs, it, last, znext);
+        // If we're outside the query bounding box, we can compute
+        // the next z value within the bounding box again (BIGMIN).
+        // But because in JavaScript bit operations on BigInt are
+        // quite expensive we first linearly scan for a treshold
+        // (e.g. t=512 below) and only then compute BIGMIN and jump
+        // to it if we are still not inside the query bounding box.
+        // This translates to using the BIGMIN optimization only
+        // for larger z jumps or discontinuities tunable with the
+        // threshold below. The speedup compared to always computing
+        // BIGMIN is 5x and higher showing how inefficient the bit
+        // operations are in JavaScript on type BigInt.
+
+        outside += 1;
+
+        if (outside > 512) {
+          const znext = bigmin(this.#zs[it], zmin, zmax);
+          it = bsearchlt(this.#zs, it, last, znext);
+        } else {
+          it += 1;
+        };
       }
     }
 
