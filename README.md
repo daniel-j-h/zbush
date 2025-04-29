@@ -32,8 +32,14 @@ We might relax this constraint in the future.
 
 ## How It Works
 
-The ideas implemented here originated as experiments in [tinygraph.org](https://tinygraph.org) but really go back to the 80s.
+We sort 2d points along a Z-order space-filling curve and use an optimization ("BIGMIN") to skip over irrelevant data when walking the curve.
+
+| Z-curve with query bounding box | Z-curve with BIGMIN skipping |
+|-|-|
+| ![](./1.jpg) | ![](./2.jpg) |
+
 If you are interested in a high-level overview check out [my blog post](https://www.openstreetmap.org/user/daniel-j-h/diary/406584).
+The ideas implemented here originated as experiments in [tinygraph.org](https://tinygraph.org) but really go back to the 80s.
 
 For experiments, context, implementation details, and ideas for further improvements
 - https://github.com/tinygraph/tinygraph/issues/22
