@@ -163,8 +163,10 @@ export default class ZBush {
 
         outside += 1;
 
-        if (outside > 512) {
-          const znext = bigmin(this.#zs[it], zmin, zmax);
+        const zval = this.#zs[it];
+
+        if (outside > 512 && zval < zmax) {
+          const znext = bigmin(zval, zmin, zmax);
           it = bsearchlt(this.#zs, it, last, znext);
         } else {
           it += 1;
