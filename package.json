@@ -1,6 +1,6 @@
 {
   "name": "zbush",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A very fast spatial index for 2D points based on a Z-Order space filling curve and BIGMIN search space pruning",
   "main": "index.js",
   "types": "index.d.ts",
